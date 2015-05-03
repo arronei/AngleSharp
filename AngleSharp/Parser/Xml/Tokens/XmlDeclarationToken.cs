@@ -1,13 +1,13 @@
-﻿using System;
-
-namespace AngleSharp.Xml
+﻿namespace AngleSharp.Parser.Xml
 {
+    using System;
+
     /// <summary>
     /// Represents the XML declaration &lt;?xml ...?&gt;
     /// </summary>
     sealed class XmlDeclarationToken : XmlToken
     {
-        #region Members
+        #region Fields
 
         String _version;
         String _encoding;
@@ -20,9 +20,9 @@ namespace AngleSharp.Xml
         /// <summary>
         /// Creates a new XML declaration token.
         /// </summary>
-        public XmlDeclarationToken()
+        public XmlDeclarationToken(TextPosition position)
+            : base(XmlTokenType.Declaration, position)
         {
-            _type = XmlTokenType.Declaration;
             _version = String.Empty;
             _encoding = null;
             _standalone = false;

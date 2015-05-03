@@ -1,16 +1,16 @@
-﻿using AngleSharp.DOM;
-using AngleSharp.Events;
-using AngleSharp.DOM.Xml;
-using System;
-using System.IO;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Globalization;
-using AngleSharp.DTD;
-
-namespace AngleSharp.Xml
+﻿namespace AngleSharp.Parser.Xml
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using AngleSharp.Dom;
+    using AngleSharp.Dom.Xml;
+    using AngleSharp.Extensions;
+
     /// <summary>
     /// For more details: See the W3C Recommendation
     /// http://www.w3.org/TR/REC-xml/
@@ -18,27 +18,19 @@ namespace AngleSharp.Xml
     /// http://www.w3.org/html/wg/drafts/html/master/the-xhtml-syntax.html#xml-parser.
     /// </summary>
     [DebuggerStepThrough]
-    public sealed class XmlParser : IParser
+    public sealed class XmlParser
     {
-        #region Members
+        #region Fields
 
-        XmlTokenizer tokenizer;
-        Boolean started;
-        XMLDocument doc;
-        List<Element> open;
-        XmlTreeMode insert;
-        Task task;
-        Boolean standalone;
-		Object sync;
+        readonly XmlTokenizer _tokenizer;
+        readonly Document _document;
+        readonly List<Element> _openElements;
+        readonly Object _syncGuard;
 
-        #endregion
-
-        #region Events
-
-        /// <summary>
-        /// This event is raised once a parser error occured.
-        /// </summary>
-        public event ParseErrorEventHandler ErrorOccurred;
+        Boolean _started;
+        XmlTreeMode _currentMode;
+        Task<IDocument> _parsing;
+        Boolean _standalone;
 
         #endregion
 
@@ -49,8 +41,11 @@ namespace AngleSharp.Xml
         /// based on the given source.
         /// </summary>
         /// <param name="source">The source code as a string.</param>
-        public XmlParser(String source)
-            : this(new XMLDocument(), new SourceManager(source))
+        /// <param name="configuration">
+        /// [Optional] The configuration to use.
+        /// </param>
+        public XmlParser(String source, IConfiguration configuration = null)
+            : this(new XmlDocument(BrowsingContext.New(configuration), new TextSource(source)))
         {
         }
 
@@ -59,56 +54,27 @@ namespace AngleSharp.Xml
         /// based on the given stream.
         /// </summary>
         /// <param name="stream">The stream to use as source.</param>
-        public XmlParser(Stream stream)
-            : this(new XMLDocument(), new SourceManager(stream))
+        /// <param name="configuration">
+        /// [Optional] The configuration to use.
+        /// </param>
+        public XmlParser(Stream stream, IConfiguration configuration = null)
+            : this(new XmlDocument(BrowsingContext.New(configuration), new TextSource(stream, configuration.DefaultEncoding())))
         {
         }
 
         /// <summary>
-        /// Creates a new instance of the XML parser with the specified document
-        /// based on the given source.
+        /// Creates a new instance of the XML parser with the specified document.
         /// </summary>
         /// <param name="document">The document instance to be constructed.</param>
-        /// <param name="source">The source code as a string.</param>
-        public XmlParser(XMLDocument document, String source)
-            : this(document, new SourceManager(source))
+        internal XmlParser(Document document)
         {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the XML parser with the specified document
-        /// based on the given stream.
-        /// </summary>
-        /// <param name="document">The document instance to be constructed.</param>
-        /// <param name="stream">The stream to use as source.</param>
-        public XmlParser(XMLDocument document, Stream stream)
-            : this(document, new SourceManager(stream))
-        {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the XML parser with the specified document
-        /// based on the given source manager.
-        /// </summary>
-        /// <param name="document">The document instance to be constructed.</param>
-        /// <param name="source">The source to use.</param>
-        internal XmlParser(XMLDocument document, SourceManager source)
-        {
-            tokenizer = new XmlTokenizer(source);
-            tokenizer.DTD.Parent = document;
-
-            tokenizer.ErrorOccurred += (s, ev) =>
-            {
-                if (ErrorOccurred != null)
-                    ErrorOccurred(this, ev);
-            };
-
-			sync = new Object();
-            started = false;
-            doc = document;
-            standalone = false;
-            open = new List<Element>();
-            insert = XmlTreeMode.Initial;
+            _tokenizer = new XmlTokenizer(document.Source, document.Options.Events);
+			_syncGuard = new Object();
+            _started = false;
+            _document = document;
+            _standalone = false;
+            _openElements = new List<Element>();
+            _currentMode = XmlTreeMode.Initial;
         }
 
         #endregion
@@ -120,27 +86,29 @@ namespace AngleSharp.Xml
         /// </summary>
         internal Node CurrentNode
         {
-            get { return open.Count > 0 ? (Node)open[open.Count - 1] : (Node)doc; }
+            get
+            {
+                if (_openElements.Count > 0)
+                    return _openElements[_openElements.Count - 1];
+                
+                return _document;
+            }
         }
 
         /// <summary>
         /// Gets the (maybe intermediate) result of the parsing process.
         /// </summary>
-        public XMLDocument Result
+        public IDocument Result
         {
-            get
-            {
-                Parse();
-                return doc;
-            }
+            get { return _document; }
         }
 
         /// <summary>
         /// Gets if the XML is standalone.
         /// </summary>
-        public Boolean Standalone
+        public Boolean IsStandalone
         {
-            get { return standalone; }
+            get { return _standalone; }
         }
 
         /// <summary>
@@ -148,7 +116,7 @@ namespace AngleSharp.Xml
         /// </summary>
         public Boolean IsAsync
         {
-            get { return task != null; }
+            get { return _parsing != null; }
         }
 
         #endregion
@@ -158,41 +126,50 @@ namespace AngleSharp.Xml
         /// <summary>
         /// Parses the given source asynchronously and creates the document.
         /// </summary>
-        /// <returns>The task which could be awaited or continued differently.</returns>
-        public Task ParseAsync()
+        /// <returns>
+        /// The task which could be awaited or continued differently.
+        /// </returns>
+        public Task<IDocument> ParseAsync()
         {
-			lock (sync)
-			{
-				if (!started)
-				{
-					started = true;
-					task = Task.Run(() => Kernel());
-				}
-				else if (task == null)
-					throw new InvalidOperationException("The parser has already run synchronously.");
+            return ParseAsync(CancellationToken.None);
+        }
 
-				return task;
-			}
+        /// <summary>
+        /// Parses the given source asynchronously and creates the document.
+        /// </summary>
+        /// <param name="cancelToken">The cancellation token to use.</param>
+        /// <returns>
+        /// The task which could be awaited or continued differently.
+        /// </returns>
+        public Task<IDocument> ParseAsync(CancellationToken cancelToken)
+        {
+            lock (_syncGuard)
+            {
+                if (!_started)
+                {
+                    _started = true;
+                    _parsing = KernelAsync(cancelToken);
+                }
+            }
+
+            return _parsing;
         }
 
         /// <summary>
         /// Parses the given source and creates the document.
         /// </summary>
-        public void Parse()
+        public IDocument Parse()
         {
-			var run = false;
+            lock (_syncGuard)
+            {
+                if (!_started)
+                {
+                    _started = true;
+                    Kernel();
+                }
+            }
 
-			lock (sync)
-			{
-				if (!started)
-				{
-					started = true;
-					run = true;
-				}
-			}
-
-			if (run)
-				Kernel();
+            return _document;
         }
 
         #endregion
@@ -205,7 +182,7 @@ namespace AngleSharp.Xml
         /// <param name="token">The token to consume.</param>
         void Consume(XmlToken token)
         {
-            switch (insert)
+            switch (_currentMode)
             {
                 case XmlTreeMode.Initial:
                     Initial(token);
@@ -234,17 +211,17 @@ namespace AngleSharp.Xml
             if (token.Type == XmlTokenType.Declaration)
             {
                 var tok = (XmlDeclarationToken)token;
-                standalone = tok.Standalone;
+                _standalone = tok.Standalone;
 
                 if (!tok.IsEncodingMissing)
                     SetEncoding(tok.Encoding);
 
                 if (!CheckVersion(tok.Version))
-                    throw Errors.Xml(ErrorCode.XmlDeclarationVersionUnsupported);
+                    throw XmlParseError.XmlDeclarationVersionUnsupported.At(token.Position);
             }
             else
             {
-                insert = XmlTreeMode.Prolog;
+                _currentMode = XmlTreeMode.Prolog;
                 BeforeDoctype(token);
             }
         }
@@ -258,19 +235,15 @@ namespace AngleSharp.Xml
         {
             switch (token.Type)
             {
-                case XmlTokenType.DOCTYPE:
+                case XmlTokenType.Doctype:
                 {
                     var tok = (XmlDoctypeToken)token;
-                    var doctype = new DocumentType();
-                    doctype.SystemId = tok.SystemIdentifier;
-                    doctype.PublicId = tok.PublicIdentifier;
-                    doctype.TypeDefinitions = tokenizer.DTD;
-                    doctype.Name = tok.Name;
-                    doc.AppendChild(doctype);
-                    insert = XmlTreeMode.Misc;
-
-                    if (!tok.IsSystemIdentifierMissing && !standalone)
-                        ScanExternalSubset(doctype.SystemId, doctype.TypeDefinitions);
+                    _document.AppendChild(new DocumentType(_document, tok.Name)
+                    {
+                        SystemIdentifier = tok.SystemIdentifier,
+                        PublicIdentifier = tok.PublicIdentifier
+                    });
+                    _currentMode = XmlTreeMode.Misc;
 
                     break;
                 }
@@ -293,27 +266,27 @@ namespace AngleSharp.Xml
                 case XmlTokenType.Comment:
                 {
                     var tok = (XmlCommentToken)token;
-                    var com = doc.CreateComment(tok.Data);
+                    var com = _document.CreateComment(tok.Data);
                     CurrentNode.AppendChild(com);
                     break;
                 }
                 case XmlTokenType.ProcessingInstruction:
                 {
                     var tok = (XmlPIToken)token;
-                    var pi = doc.CreateProcessingInstruction(tok.Target, tok.Content);
+                    var pi = _document.CreateProcessingInstruction(tok.Target, tok.Content);
                     CurrentNode.AppendChild(pi);
                     break;
                 }
                 case XmlTokenType.StartTag:
                 {
-                    insert = XmlTreeMode.Body;
+                    _currentMode = XmlTreeMode.Body;
                     InBody(token);
                     break;
                 }
                 default:
                 {
                     if (!token.IsIgnorable)
-                        throw Errors.Xml(ErrorCode.XmlMissingRoot);
+                        throw XmlParseError.XmlMissingRoot.At(token.Position);
 
                     break;
                 }
@@ -331,13 +304,13 @@ namespace AngleSharp.Xml
                 case XmlTokenType.StartTag:
                 {
                     var tok = (XmlTagToken)token;
-                    var tag = doc.CreateElement(tok.Name);
+                    var tag = new XmlElement(_document, tok.Name);
                     CurrentNode.AppendChild(tag);
 
                     if (!tok.IsSelfClosing)
-                        open.Add(tag);
-                    else if(open.Count == 0)
-                        insert = XmlTreeMode.After;
+                        _openElements.Add(tag);
+                    else if(_openElements.Count == 0)
+                        _currentMode = XmlTreeMode.After;
 
                     for (int i = 0; i < tok.Attributes.Count; i++)
                         tag.SetAttribute(tok.Attributes[i].Key, tok.Attributes[i].Value.Trim());
@@ -349,12 +322,12 @@ namespace AngleSharp.Xml
                     var tok = (XmlTagToken)token;
 
                     if (CurrentNode.NodeName != tok.Name)
-                        throw Errors.Xml(ErrorCode.TagClosingMismatch);
+                        throw XmlParseError.TagClosingMismatch.At(token.Position);
 
-                    open.RemoveAt(open.Count - 1);
+                    _openElements.RemoveAt(_openElements.Count - 1);
 
-                    if (open.Count == 0)
-                        insert = XmlTreeMode.After;
+                    if (_openElements.Count == 0)
+                        _currentMode = XmlTreeMode.After;
 
                     break;
                 }
@@ -367,7 +340,7 @@ namespace AngleSharp.Xml
                 case XmlTokenType.Entity:
                 {
                     var tok = (XmlEntityToken)token;
-                    var str = tokenizer.GetEntity(tok);
+                    var str = tok.GetEntity();
                     CurrentNode.AppendText(str);
                     break;
                 }
@@ -380,20 +353,20 @@ namespace AngleSharp.Xml
                 case XmlTokenType.Character:
                 {
                     var tok = (XmlCharacterToken)token;
-                    CurrentNode.AppendText(tok.Data);
+                    CurrentNode.AppendText(tok.Data.ToString());
                     break;
                 }
-                case XmlTokenType.EOF:
+                case XmlTokenType.EndOfFile:
                 {
-                    throw Errors.Xml(ErrorCode.EOF);
+                    throw XmlParseError.EOF.At(token.Position);
                 }
-                case XmlTokenType.DOCTYPE:
+                case XmlTokenType.Doctype:
                 {
-                    throw Errors.Xml(ErrorCode.XmlDoctypeAfterContent);
+                    throw XmlParseError.XmlDoctypeAfterContent.At(token.Position);
                 }
                 case XmlTokenType.Declaration:
                 {
-                    throw Errors.Xml(ErrorCode.XmlDeclarationMisplaced);
+                    throw XmlParseError.XmlDeclarationMisplaced.At(token.Position);
                 }
             }
         }
@@ -412,17 +385,14 @@ namespace AngleSharp.Xml
                     InMisc(token);
                     break;
                 }
-                case XmlTokenType.EOF:
+                case XmlTokenType.EndOfFile:
                 {
-                    if(doc.Options.IsValidating && !XmlValidator.Run(doc))
-                        throw Errors.Xml(ErrorCode.XmlValidationFailed);
-
                     break;
                 }
                 default:
                 {
                     if (!token.IsIgnorable)
-                        throw Errors.Xml(ErrorCode.XmlMissingRoot);
+                        throw XmlParseError.XmlMissingRoot.At(token.Position);
 
                     break;
                 }
@@ -453,58 +423,62 @@ namespace AngleSharp.Xml
         /// </summary>
         void Kernel()
         {
-            XmlToken token;
+            var token = default(XmlToken);
 
             do
             {
-                token = tokenizer.Get();
+                token = _tokenizer.Get();
                 Consume(token);
             }
-            while (token.Type != XmlTokenType.EOF);
+            while (token.Type != XmlTokenType.EndOfFile);
+        }
+
+        /// <summary>
+        /// The kernel that is pulling the tokens into the parser.
+        /// </summary>
+        /// <param name="cancelToken">The cancellation token to consider.</param>
+        /// <returns>The task to await.</returns>
+        async Task<IDocument> KernelAsync(CancellationToken cancelToken)
+        {
+            var source = _document.Source;
+            var token = default(XmlToken);
+
+            do
+            {
+                if (source.Length - source.Index < 1024)
+                    await source.Prefetch(8192, cancelToken).ConfigureAwait(false);
+
+                token = _tokenizer.Get();
+                Consume(token);
+            }
+            while (token.Type != XmlTokenType.EndOfFile);
+
+            return _document;
         }
 
         /// <summary>
         /// Sets the document's encoding to the given one.
         /// </summary>
-        /// <param name="encoding">The encoding to use.</param>
-        void SetEncoding(String encoding)
+        /// <param name="charSet">The encoding to use.</param>
+        void SetEncoding(String charSet)
         {
-            if (DocumentEncoding.IsSupported(encoding))
+            if (TextEncoding.IsSupported(charSet))
             {
-                var enc = DocumentEncoding.Resolve(encoding);
+                var encoding = TextEncoding.Resolve(charSet);
 
-                if (enc != null)
+                if (encoding != null)
                 {
-                    doc.InputEncoding = enc.WebName;
-                    tokenizer.Stream.Encoding = enc;
+                    try
+                    {
+                        _document.Source.CurrentEncoding = encoding;
+                    }
+                    catch (NotSupportedException)
+                    {
+                        _currentMode = XmlTreeMode.Initial;
+                        _document.ReplaceAll(null, true);
+                        _openElements.Clear();
+                    }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Scans the external portion, i.e. the system identifier of the doctype.
-        /// </summary>
-        /// <param name="url">The url to use.</param>
-        /// <param name="typeDefinitions">The type definitions to modify.</param>
-        void ScanExternalSubset(String url, DtdContainer typeDefinitions)
-        {
-            if (Configuration.HasHttpRequester)
-            {
-                if (!Location.IsAbsolute(url))
-                    url = Location.MakeAbsolute(doc.BaseURI, url);
-
-                var http = Configuration.GetHttpRequester();
-                var response = http.Request(new DefaultHttpRequest { Address = new Uri(url) });
-                var stream = new SourceManager(response.Content);
-                var container = new DtdContainer(typeDefinitions)
-                {
-                    Url = url,
-                    Parent = doc
-                };
-
-                var dtd = new DtdParser(container, stream);
-                dtd.IsInternal = false;
-                dtd.Parse();
             }
         }
 

@@ -1,15 +1,16 @@
-﻿using System;
-
-namespace AngleSharp.Xml
+﻿namespace AngleSharp.Parser.Xml
 {
+    using System;
+    using AngleSharp.Extensions;
+
     /// <summary>
     /// The character token that contains a single character.
     /// </summary>
     sealed class XmlCharacterToken : XmlToken
     {
-        #region Members
+        #region Fields
 
-        Char _data;
+        readonly Char _data;
 
         #endregion
 
@@ -18,20 +19,18 @@ namespace AngleSharp.Xml
         /// <summary>
         /// Creates a new character token.
         /// </summary>
-        public XmlCharacterToken()
+        public XmlCharacterToken(TextPosition position)
+            : this(position, Symbols.Null)
         {
-            _data = Specification.NULL;
-            _type = XmlTokenType.Character;
         }
 
         /// <summary>
         /// Creates a new character token with the given character.
         /// </summary>
-        /// <param name="data">The character.</param>
-        public XmlCharacterToken(Char data)
+        public XmlCharacterToken(TextPosition position, Char data)
+            : base(XmlTokenType.Character, position)
         {
             _data = data;
-            _type = XmlTokenType.Character;
         }
 
         #endregion
@@ -44,7 +43,6 @@ namespace AngleSharp.Xml
         public Char Data
         {
             get { return _data; }
-            set { _data = value; }
         }
 
         /// <summary>

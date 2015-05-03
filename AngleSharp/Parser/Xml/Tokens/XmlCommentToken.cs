@@ -1,15 +1,15 @@
-﻿using System;
-
-namespace AngleSharp.Xml
+﻿namespace AngleSharp.Parser.Xml
 {
+    using System;
+
     /// <summary>
     /// The token that is used for comments.
     /// </summary>
     sealed class XmlCommentToken : XmlToken
     {
-        #region Members
+        #region Fields
 
-        String _data;
+        readonly String _data;
 
         #endregion
 
@@ -18,19 +18,17 @@ namespace AngleSharp.Xml
         /// <summary>
         /// Creates a new comment token.
         /// </summary>
-        public XmlCommentToken()
+        public XmlCommentToken(TextPosition position)
+            : this(position, String.Empty)
         {
-            _data = String.Empty;
-            _type = XmlTokenType.Comment;
         }
 
         /// <summary>
         /// Creates a new comment token with the supplied data.
         /// </summary>
-        /// <param name="data">The data to set.</param>
-        public XmlCommentToken(String data)
+        public XmlCommentToken(TextPosition position, String data)
+            : base(XmlTokenType.Comment, position)
         {
-            _type = XmlTokenType.Comment;
             _data = data;
         }
 
@@ -44,7 +42,6 @@ namespace AngleSharp.Xml
         public String Data 
         {
             get { return _data; }
-            set { _data = value; }
         }
 
         #endregion

@@ -3,24 +3,21 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using AngleSharp.Dom.Collections;
     using AngleSharp.Dom.Events;
     using AngleSharp.Dom.Html;
-    using AngleSharp.Events;
     using AngleSharp.Extensions;
     using AngleSharp.Html;
     using AngleSharp.Network;
-    using AngleSharp.Parser.Html;
 
     /// <summary>
     /// Represents a document node.
     /// </summary>
     [DebuggerStepThrough]
-    class Document : Node, IDocument
+    abstract class Document : Node, IDocument
     {
         #region Fields
 
@@ -33,6 +30,8 @@
         readonly IBrowsingContext _context;
         readonly IWindow _view;
         readonly IResourceLoader _loader;
+        readonly Location _location;
+        readonly TextSource _source;
 
         QuirksMode _quirksMode;
         Sandboxes _sandbox;
@@ -42,12 +41,10 @@
         Boolean _salvageable;
         Boolean _firedUnload;
         DocumentReadyState _ready;
-        TextSource _source;
         String _referrer;
         String _contentType;
         String _lastStyleSheetSet;
         String _preferredStyleSheetSet;
-        Location _location;
         IElement _focus;
         HtmlAllCollection _all;
         HtmlCollection<IHtmlAnchorElement> _anchors;
@@ -598,7 +595,7 @@
         public String ContentType
         {
             get { return _contentType; }
-            internal set { _contentType = value; }
+            protected set { _contentType = value; }
         }
 
         /// <summary>
@@ -607,7 +604,7 @@
         public DocumentReadyState ReadyState
         {
             get { return _ready; }
-            internal set
+            protected set
             {
                 _ready = value;
                 this.FireSimpleEvent(EventNames.ReadyStateChanged);
@@ -638,6 +635,7 @@
         public String Referrer
         {
             get { return _referrer; }
+            protected set { _referrer = value; }
         }
 
         /// <summary>
@@ -646,7 +644,6 @@
         public ILocation Location
         {
             get { return _location; }
-            set { LoadHtml(value.Href); }
         }
 
         /// <summary>
@@ -655,7 +652,7 @@
         public String DocumentUri
         {
             get { return _location.Href; }
-            internal set
+            protected set
             {
                 _location.Changed -= LocationChanged;
                 _location.Href = value;
@@ -700,9 +697,9 @@
         /// <summary>
         /// Gets the root element of the document.
         /// </summary>
-        public virtual IElement DocumentElement
+        public abstract IElement DocumentElement
         {
-            get { return this.FindChild<HtmlHtmlElement>(); }
+            get;
         }
 
         /// <summary>
@@ -785,34 +782,10 @@
         /// <summary>
         /// Gets or sets the title of the document.
         /// </summary>
-        public virtual String Title
+        public abstract String Title
         {
-            get
-            {
-                var title = DocumentElement.FindDescendant<IHtmlTitleElement>();
-                
-                if (title != null)
-                    return title.TextContent.CollapseAndStrip();
-
-                return String.Empty;
-            }
-            set
-            {
-                var title = DocumentElement.FindDescendant<IHtmlTitleElement>();
-
-                if (title == null)
-                {
-                    var head = Head;
-
-                    if (head == null)
-                        return;
-
-                    title = new HtmlTitleElement(this);
-                    head.AppendChild(title);
-                }
-
-                title.TextContent = value;
-            }
+            get;
+            set;
         }
 
         /// <summary>
@@ -1060,12 +1033,7 @@
             //Important to fix #45
             ReplaceAll(null, true);
             _loadingScripts.Clear();
-
-            if (_source != null)
-            {
-                _source.Dispose();
-                _source = null;
-            }
+            _source.Dispose();
         }
 
         /// <summary>
@@ -1132,6 +1100,15 @@
         }
 
         /// <summary>
+        /// Loads the document content from the given url.
+        /// </summary>
+        /// <param name="url">The url that hosts the content.</param>
+        public void Load(String url)
+        {
+            Location.Href = url;
+        }
+
+        /// <summary>
         /// Finishes writing to a document.
         /// </summary>
         void IDocument.Close()
@@ -1180,15 +1157,6 @@
             var result = new List<IElement>();
             ChildNodes.GetElementsByName(name, result);
             return new HtmlElementCollection(result);
-        }
-
-        /// <summary>
-        /// Loads the document content from the given URL.
-        /// </summary>
-        /// <param name="url">The URL that hosts the HTML content.</param>
-        public void LoadHtml(String url)
-        {
-            _location.Href = url;
         }
 
         /// <summary>
@@ -1526,13 +1494,7 @@
         /// cloned, or false to clone only the specified node.
         /// </param>
         /// <returns>The duplicate node.</returns>
-        public override INode Clone(Boolean deep = true)
-        {
-            var node = new Document(_context, new TextSource(Source.Text));
-            CopyProperties(this, node, deep);
-            CopyDocumentProperties(this, node, deep);
-            return node;
-        }
+        public override abstract INode Clone(Boolean deep = true);
 
         /// <summary>
         /// Returns an HTML-code representation of the node.
@@ -1603,49 +1565,6 @@
 
             if (IsToBePrinted)
                 Print();
-        }
-
-        /// <summary>
-        /// (Re-)loads the document with the given response.
-        /// </summary>
-        /// <param name="response">The response to consider.</param>
-        /// <param name="cancelToken">Token for cancellation.</param>
-        /// <returns>The task that builds the document.</returns>
-        internal Task LoadAsync(IResponse response, CancellationToken cancelToken)
-        {
-            var contentType = response.Headers.GetOrDefault(HeaderNames.ContentType, MimeTypes.Html);
-            var referrer = response.Headers.GetOrDefault(HeaderNames.Referer, String.Empty);
-            var url = response.Address.Href;
-            return LoadAsync(response.Content, contentType, url, referrer, cancelToken);
-        }
-
-        /// <summary>
-        /// (Re-)loads the document with the given data.
-        /// </summary>
-        /// <param name="content">The content to consider.</param>
-        /// <param name="contentType">The type of the content.</param>
-        /// <param name="url">The address of the content.</param>
-        /// <param name="referrer">The previously visited page.</param>
-        /// <param name="cancelToken">Token for cancellation.</param>
-        /// <returns>The task that builds the document.</returns>
-        internal async Task LoadAsync(Stream content, String contentType, String url, String referrer, CancellationToken cancelToken)
-        {
-            var config = Options;
-            _contentType = MimeTypes.Html;
-            _referrer = referrer;
-            Open(contentType);
-            DocumentUri = url;
-            ReadyState = DocumentReadyState.Loading;
-            _source = new TextSource(content, config.DefaultEncoding());
-            var events = config.Events;
-            var parser = new HtmlParser(this);
-            var evt = new HtmlParseStartEvent(parser);
-
-            if (events != null)
-                events.Publish(evt);
-
-            var result = await parser.ParseAsync(cancelToken).ConfigureAwait(false);
-            evt.SetResult(result);
         }
 
         /// <summary>
@@ -1848,6 +1767,9 @@
             target._referrer = source._referrer;
             target._location.Href = source._location.Href;
             target._quirksMode = source._quirksMode;
+            target._sandbox = source._sandbox;
+            target._async = source._async;
+            target._contentType = source._contentType;
         }
 
         #endregion

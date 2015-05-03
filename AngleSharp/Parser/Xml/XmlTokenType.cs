@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AngleSharp.Xml
+﻿namespace AngleSharp.Parser.Xml
 {
     /// <summary>
     /// An enumation of all possible tokens.
@@ -10,7 +8,7 @@ namespace AngleSharp.Xml
         /// <summary>
         /// The DOCTYPE token.
         /// </summary>
-        DOCTYPE,
+        Doctype,
         /// <summary>
         /// The XML declaration.
         /// </summary>
@@ -50,6 +48,6 @@ namespace AngleSharp.Xml
         /// <summary>
         /// The End-Of-File token to mark the end.
         /// </summary>
-        EOF
+        EndOfFile
     }
 }

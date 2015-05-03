@@ -117,6 +117,7 @@
     <Compile Include="Dom\Events\MouseEvent.cs" />
     <Compile Include="Dom\Events\PageTransitionEvent.cs" />
     <Compile Include="Dom\Html\HtmlDataElement.cs" />
+    <Compile Include="Dom\Html\HtmlDocument.cs" />
     <Compile Include="Dom\Html\HtmlMeterElement.cs" />
     <Compile Include="Dom\Html\HtmlPictureElement.cs" />
     <Compile Include="Dom\Html\HtmlRbElement.cs" />
@@ -139,13 +140,16 @@
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Extensions\RuleExtensions.cs" />
     <Compile Include="Extensions\ValueConverterExtensions.cs" />
+    <Compile Include="Parser\Xml\XmlParseError.cs" />
     <Compile Include="Foundation\Factory.cs" />
     <Compile Include="Dom\MutationHost.cs" />
     <Compile Include="BrowsingContext.cs" />
     <Compile Include="Html\HtmlMarkupFormatter.cs" />
+    <Compile Include="Html\PrettyMarkupFormatter.cs" />
     <Compile Include="IMarkupFormattable.cs" />
     <Compile Include="IMarkupFormatter.cs" />
     <Compile Include="Interfaces\Html\IHtmlDataElement.cs" />
+    <Compile Include="Interfaces\Html\IHtmlDocument.cs" />
     <Compile Include="Interfaces\Svg\ISvgDocument.cs" />
     <Compile Include="Linq\SelectorExtensions.cs" />
     <Compile Include="Network\Default\DocumentLoader.cs" />
@@ -157,6 +161,8 @@
     <Compile Include="Parser\Css\CssParseError.cs" />
     <Compile Include="Parser\Css\CssParserExtensions.cs" />
     <Compile Include="Parser\Html\HtmlParseError.cs" />
+    <Compile Include="Parser\Xml\XmlParseException.cs" />
+    <Compile Include="Parser\Xml\XmlParserExtensions.cs" />
     <Compile Include="Services\Default\LoaderService.cs" />
     <Compile Include="Services\Default\StylingService.cs" />
     <Compile Include="Services\IClipboardService.cs" />
@@ -678,7 +684,6 @@
     <Compile Include="Dom\Constants\AdjacentPosition.cs" />
     <Compile Include="Factories\HtmlElementFactory.cs" />
     <Compile Include="Factories\MathElementFactory.cs" />
-    <Compile Include="Dom\Io\FileEntry.cs" />
     <Compile Include="Factories\SvgElementFactory.cs" />
     <Compile Include="Parser\Html\HtmlParserExtensions.cs" />
     <Compile Include="ApiExtensions.cs" />
@@ -814,14 +819,9 @@
     <Compile Include="Dom\Constants\DocumentReadyState.cs" />
     <Compile Include="Parser\Css\CssTokenType.cs" />
     <Compile Include="Parser\Css\CssSelectorConstructor.cs" />
-    <Compile Include="Parser\Css\Tokens\CssBracketToken.cs" />
-    <Compile Include="Parser\Css\Tokens\CssColumnToken.cs" />
-    <Compile Include="Parser\Css\Tokens\CssCommentToken.cs" />
     <Compile Include="Parser\Css\Tokens\CssKeywordToken.cs" />
-    <Compile Include="Parser\Css\Tokens\CssMatchToken.cs" />
     <Compile Include="Parser\Css\Tokens\CssNumberToken.cs" />
     <Compile Include="Parser\Css\Tokens\CssRangeToken.cs" />
-    <Compile Include="Parser\Css\Tokens\CssSpecialCharacter.cs" />
     <Compile Include="Parser\Css\Tokens\CssStringToken.cs" />
     <Compile Include="Parser\Css\Tokens\CssUnitToken.cs" />
     <Compile Include="Parser\Html\HtmlTokenType.cs" />
@@ -913,14 +913,26 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Foundation\Symbols.cs" />
     <Compile Include="Parser\Html\HtmlTokenizer.cs" />
-    <Compile Include="Parser\Css\Tokens\CssCharacterToken.cs" />
-    <Compile Include="Parser\Css\Tokens\CssDelimToken.cs" />
     <Compile Include="Parser\Css\Tokens\CssToken.cs" />
     <Compile Include="Parser\Html\Tokens\HtmlToken.cs" />
     <Compile Include="Parser\Html\Tokens\HtmlDoctypeToken.cs" />
     <Compile Include="Parser\Html\Tokens\HtmlTagToken.cs" />
     <Compile Include="Dom\Window.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlCDataToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlCharacterToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlCommentToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlDeclarationToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlDoctypeToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlEndOfFileToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlEntityToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlPIToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlTagToken.cs" />
+    <Compile Include="Parser\Xml\Tokens\XmlToken.cs" />
     <Compile Include="Xml\XmlMarkupFormatter.cs" />
+    <Compile Include="Parser\Xml\XmlParser.cs" />
+    <Compile Include="Parser\Xml\XmlTokenizer.cs" />
+    <Compile Include="Parser\Xml\XmlTokenType.cs" />
+    <Compile Include="Parser\Xml\XmlTreeMode.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

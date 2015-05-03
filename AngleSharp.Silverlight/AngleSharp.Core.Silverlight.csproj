@@ -1339,6 +1339,9 @@
     <Compile Include="..\AngleSharp\Dom\Html\HtmlDivElement.cs">
       <Link>Dom\Html\HtmlDivElement.cs</Link>
     </Compile>
+    <Compile Include="..\AngleSharp\Dom\Html\HtmlDocument.cs">
+      <Link>Dom\HtmlDocument.cs</Link>
+    </Compile>
     <Compile Include="..\AngleSharp\Dom\Html\HtmlElement.cs">
       <Link>Dom\Html\HtmlElement.cs</Link>
     </Compile>
@@ -1602,9 +1605,6 @@
     </Compile>
     <Compile Include="..\AngleSharp\Dom\Html\ValidityState.cs">
       <Link>Dom\Html\ValidityState.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Dom\Io\FileEntry.cs">
-      <Link>Dom\Io\FileEntry.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Dom\Io\FileList.cs">
       <Link>Dom\Io\FileList.cs</Link>
@@ -2058,6 +2058,9 @@
     </Compile>
     <Compile Include="..\AngleSharp\Interfaces\Html\IHtmlDivElement.cs">
       <Link>Interfaces\Html\IHtmlDivElement.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Interfaces\Html\IHtmlDocument.cs">
+      <Link>Interfaces\Html\IHtmlDocument.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Interfaces\Html\IHtmlElement.cs">
       <Link>Interfaces\Html\IHtmlElement.cs</Link>
@@ -2542,35 +2545,14 @@
     <Compile Include="..\AngleSharp\Parser\Css\CssValueBuilder.cs">
       <Link>Parser\Css\CssValueBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssBracketToken.cs">
-      <Link>Parser\Css\Tokens\CssBracketToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssCharacterToken.cs">
-      <Link>Parser\Css\Tokens\CssCharacterToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssColumnToken.cs">
-      <Link>Parser\Css\Tokens\CssColumnToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssCommentToken.cs">
-      <Link>Parser\Css\Tokens\CssCommentToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssDelimToken.cs">
-      <Link>Parser\Css\Tokens\CssDelimToken.cs</Link>
-    </Compile>
     <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssKeywordToken.cs">
       <Link>Parser\Css\Tokens\CssKeywordToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssMatchToken.cs">
-      <Link>Parser\Css\Tokens\CssMatchToken.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssNumberToken.cs">
       <Link>Parser\Css\Tokens\CssNumberToken.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssRangeToken.cs">
       <Link>Parser\Css\Tokens\CssRangeToken.cs</Link>
-    </Compile>
-    <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssSpecialCharacter.cs">
-      <Link>Parser\Css\Tokens\CssSpecialCharacter.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Parser\Css\Tokens\CssStringToken.cs">
       <Link>Parser\Css\Tokens\CssStringToken.cs</Link>
@@ -2616,6 +2598,57 @@
     </Compile>
     <Compile Include="..\AngleSharp\Parser\Html\Tokens\HtmlToken.cs">
       <Link>Parser\Html\Tokens\HtmlToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlCDataToken.cs">
+      <Link>Parser\Xml\Tokens\XmlCDataToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlCharacterToken.cs">
+      <Link>Parser\Xml\Tokens\XmlCharacterToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlCommentToken.cs">
+      <Link>Parser\Xml\Tokens\XmlCommentToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlDeclarationToken.cs">
+      <Link>Parser\Xml\Tokens\XmlDeclarationToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlDoctypeToken.cs">
+      <Link>Parser\Xml\Tokens\XmlDoctypeToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlEndOfFileToken.cs">
+      <Link>Parser\Xml\Tokens\XmlEndOfFileToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlEntityToken.cs">
+      <Link>Parser\Xml\Tokens\XmlEntityToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlPIToken.cs">
+      <Link>Parser\Xml\Tokens\XmlPIToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlTagToken.cs">
+      <Link>Parser\Xml\Tokens\XmlTagToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\Tokens\XmlToken.cs">
+      <Link>Parser\Xml\Tokens\XmlToken.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlParseError.cs">
+      <Link>Parser\Xml\XmlParseError.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlParseException.cs">
+      <Link>Parser\Xml\XmlParseException.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlParser.cs">
+      <Link>Parser\Xml\XmlParser.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlParserExtensions.cs">
+      <Link>Parser\Xml\XmlParserExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlTokenizer.cs">
+      <Link>Parser\Xml\XmlTokenizer.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlTokenType.cs">
+      <Link>Parser\Xml\XmlTokenType.cs</Link>
+    </Compile>
+    <Compile Include="..\AngleSharp\Parser\Xml\XmlTreeMode.cs">
+      <Link>Parser\Xml\XmlTreeMode.cs</Link>
     </Compile>
     <Compile Include="..\AngleSharp\Properties\AssemblyInfo.cs">
       <Link>Properties\AssemblyInfo.cs</Link>
@@ -2737,7 +2770,7 @@
       <FlavorProperties GUID="{A1591282-1198-4647-A2B1-27E5FF5F6F3B}">
         <SilverlightProjectProperties />
       </FlavorProperties>
-      <UserProperties ProjectLinkerExcludeFilter="\\?desktop(\\.*)?$;\\?silverlight(\\.*)?$;\.desktop;\.silverlight;\.xaml;^service references(\\.*)?$;\.clientconfig;^web references(\\.*)?$" ProjectLinkReference="91f78c48-287e-41b5-9e49-44d6e1e31290" />
+      <UserProperties ProjectLinkReference="91f78c48-287e-41b5-9e49-44d6e1e31290" ProjectLinkerExcludeFilter="\\?desktop(\\.*)?$;\\?silverlight(\\.*)?$;\.desktop;\.silverlight;\.xaml;^service references(\\.*)?$;\.clientconfig;^web references(\\.*)?$" />
     </VisualStudio>
   </ProjectExtensions>
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" />

@@ -1,15 +1,17 @@
 ﻿namespace AngleSharp.Dom
 {
-    using AngleSharp.Dom.Css;
-    using AngleSharp.Dom.Events;
-    using AngleSharp.Dom.Navigator;
-    using AngleSharp.Extensions;
-    using AngleSharp.Html;
-    using AngleSharp.Services;
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using AngleSharp.Dom.Css;
+    using AngleSharp.Dom.Events;
+    using AngleSharp.Dom.Html;
+    using AngleSharp.Dom.Navigator;
+    using AngleSharp.Extensions;
+    using AngleSharp.Html;
+    using AngleSharp.Services;
+
 
     /// <summary>
     /// Represents a sample browsing Window implementation for automated tests,
@@ -595,7 +597,7 @@
         IWindow IWindow.Open(String url, String name, String features, String replace)
         {
             //TODO Context ?
-            var document = new Document();
+            var document = new HtmlDocument();
             document.Location.Href = url;
             return new Window(document) { Name = name };
         }
@@ -660,7 +662,7 @@
 
         async Task DoTimeout(Action<IWindow> callback, Int32 timeout, CancellationToken token)
         {
-            await token.Delay(timeout);
+            await token.Delay(timeout).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
                 return;
@@ -670,7 +672,7 @@
 
         async Task DoInterval(Action<IWindow> callback, Int32 timeout, CancellationToken token)
         {
-            await token.Delay(timeout);
+            await token.Delay(timeout).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
                 return;

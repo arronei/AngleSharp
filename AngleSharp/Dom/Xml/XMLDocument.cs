@@ -1,8 +1,11 @@
 ﻿namespace AngleSharp.Dom.Xml
 {
+    using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using AngleSharp.Extensions;
     using AngleSharp.Network;
-    using System;
+    using AngleSharp.Parser.Xml;
 
     /// <summary>
     /// Represents a document node that contains only XML nodes.
@@ -39,9 +42,26 @@
             return node;
         }
 
-        public void LoadXml(String url)
+        /// <summary>
+        /// Loads the document in the provided context from the given response.
+        /// </summary>
+        /// <param name="context">The browsing context.</param>
+        /// <param name="response">The response to consider.</param>
+        /// <param name="cancelToken">Token for cancellation.</param>
+        /// <returns>The task that builds the document.</returns>
+        internal async static Task<XmlDocument> LoadAsync(IBrowsingContext context, IResponse response, CancellationToken cancelToken)
         {
-            Location.Href = url;
+            var contentType = response.Headers.GetOrDefault(HeaderNames.ContentType, MimeTypes.Xml);
+            var source = new TextSource(response.Content, context.Configuration.DefaultEncoding());
+            var document = new XmlDocument(context, source);
+            var parser = new XmlParser(document);
+            document.ContentType = contentType;
+            document.Referrer = response.Headers.GetOrDefault(HeaderNames.Referer, String.Empty);
+            document.DocumentUri = response.Address.Href;
+            document.Cookie = response.Headers.GetOrDefault(HeaderNames.SetCookie, String.Empty);
+            document.ReadyState = DocumentReadyState.Loading;
+            await parser.ParseAsync(cancelToken).ConfigureAwait(false);
+            return document;
         }
     }
 }

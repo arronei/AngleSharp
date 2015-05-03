@@ -957,6 +957,9 @@
                     case Symbols.SquareBracketClose:
                     case Symbols.ReverseSolidus:
                         break;
+                    case Symbols.Dot:
+                        chars[count++] = (Byte)hostName[i];
+                        break;
                     case Symbols.Percent:
                         if (i + 2 < n && hostName[i + 1].IsHex() && hostName[i + 2].IsHex())
                         {
@@ -965,13 +968,25 @@
                             i += 2;
                         }
                         else
+                        {
                             chars[count++] = (Byte)Symbols.Percent;
+                        }
 
                         break;
                     default:
-                        if (!hostName[i].IsAlphanumericAscii())
+                        var chr = Symbols.Null;
+
+                        if (Symbols.Punycode.TryGetValue(hostName[i], out chr))
+                        {
+                            chars[count++] = (Byte)chr;
+                        }
+                        else if (hostName[i].IsAlphanumericAscii() == false)
                         {
                             var l = i + 1 < n && Char.IsSurrogatePair(hostName, i) ? 2 : 1;
+
+                            if (l == 1 && Char.IsLetterOrDigit(hostName[i]) == false)
+                                break;
+
                             var bytes = TextEncoding.Utf8.GetBytes(hostName.Substring(i, l));
 
                             for (var j = 0; j < bytes.Length; j++)
@@ -980,7 +995,9 @@
                             i += (l - 1);
                         }
                         else
+                        {
                             chars[count++] = (Byte)Char.ToLowerInvariant(hostName[i]);
+                        }
 
                         break;
                 }
